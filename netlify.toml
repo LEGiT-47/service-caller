@@ -5,6 +5,9 @@ functions = "netlify/functions"
 [functions]
 node_bundler = "esbuild"
 
+[functions."keep-alive"]
+schedule = "*/12 * * * *"
+
 [[redirects]]
 from = "/*"
 to = "/index.html"
