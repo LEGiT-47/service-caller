@@ -1,17 +1,32 @@
-const DEFAULT_EXTRA_URL = "https://sequeira-foods-api.onrender.com";
+const DEFAULT_EXTRA_URL = "";
+const DEFAULT_BACKEND_URL = "https://sheild-backend-0q37.onrender.com";
+const DEFAULT_AI_URL = "https://sheild-ai-service.onrender.com";
 
 exports.config = {
   schedule: "*/12 * * * *",
 };
 
 function buildTargets() {
-  const backend = process.env.BACKEND_KEEPALIVE_URL || "";
-  const ai = process.env.AI_KEEPALIVE_URL || "";
+  const backend = process.env.BACKEND_KEEPALIVE_URL || DEFAULT_BACKEND_URL;
+  const ai = process.env.AI_KEEPALIVE_URL || DEFAULT_AI_URL;
   const extra = process.env.EXTRA_KEEPALIVE_URL || DEFAULT_EXTRA_URL;
 
-  return [backend, ai, extra]
+  const normalized = [backend, ai, extra]
     .map((url) => String(url || "").trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((url) => {
+      if (/^https?:\/\//i.test(url)) {
+        return url;
+      }
+      return `https://${url}`;
+    })
+    .map((url) => {
+      // Keep-alive should hit the service root only.
+      const parsed = new URL(url);
+      return parsed.origin;
+    });
+
+  return [...new Set(normalized)];
 }
 
 async function ping(url) {
@@ -32,7 +47,8 @@ async function ping(url) {
 
     return {
       url,
-      ok: response.ok,
+      ok: true,
+      reachable: true,
       status: response.status,
       durationMs: Date.now() - startedAt,
     };
@@ -40,6 +56,7 @@ async function ping(url) {
     return {
       url,
       ok: false,
+      reachable: false,
       status: null,
       durationMs: Date.now() - startedAt,
       error: error.name === "AbortError" ? "timeout" : error.message,
@@ -50,15 +67,17 @@ async function ping(url) {
 }
 
 exports.handler = async () => {
+  const runId = `run_${Date.now()}`;
   const runStartedAt = new Date().toISOString();
   const targets = buildTargets();
 
   console.log(
-    `[keep-alive] run started at ${runStartedAt}; target count=${targets.length}`
+    `[keep-alive] ${runId} started at ${runStartedAt}; target count=${targets.length}`
   );
+  console.log(`[keep-alive] ${runId} targets: ${targets.join(", ")}`);
 
   if (targets.length === 0) {
-    console.warn("[keep-alive] no targets configured");
+    console.warn(`[keep-alive] ${runId} no targets configured`);
     return {
       statusCode: 400,
       body: JSON.stringify({
@@ -73,25 +92,26 @@ exports.handler = async () => {
   results.forEach((result) => {
     if (result.ok) {
       console.log(
-        `[keep-alive] called ${result.url} -> status=${result.status} duration=${result.durationMs}ms`
+        `[keep-alive] ${runId} called ${result.url} -> status=${result.status} duration=${result.durationMs}ms`
       );
       return;
     }
 
     console.error(
-      `[keep-alive] called ${result.url} -> FAILED status=${result.status ?? "n/a"} duration=${result.durationMs}ms error=${result.error || "unknown"}`
+      `[keep-alive] ${runId} called ${result.url} -> FAILED status=${result.status ?? "n/a"} duration=${result.durationMs}ms error=${result.error || "unknown"}`
     );
   });
 
   const failed = results.filter((result) => !result.ok);
   console.log(
-    `[keep-alive] run completed; success=${results.length - failed.length} failed=${failed.length}`
+    `[keep-alive] ${runId} completed; success=${results.length - failed.length} failed=${failed.length}`
   );
 
   return {
     statusCode: failed.length ? 207 : 200,
     body: JSON.stringify({
       ok: failed.length === 0,
+      runId,
       schedule: "*/12 * * * *",
       timestamp: new Date().toISOString(),
       results,
