@@ -1,0 +1,9 @@
+{
+  "name": "service-caller",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Netlify scheduled keep-alive pings for Render services",
+  "scripts": {
+    "test:function": "node -e \"const f=require('./netlify/functions/keep-alive'); f.handler().then(r=>console.log(r.statusCode)).catch(e=>{console.error(e); process.exit(1);});\""
+  }
+}
