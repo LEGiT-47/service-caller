@@ -50,9 +50,15 @@ async function ping(url) {
 }
 
 exports.handler = async () => {
+  const runStartedAt = new Date().toISOString();
   const targets = buildTargets();
 
+  console.log(
+    `[keep-alive] run started at ${runStartedAt}; target count=${targets.length}`
+  );
+
   if (targets.length === 0) {
+    console.warn("[keep-alive] no targets configured");
     return {
       statusCode: 400,
       body: JSON.stringify({
@@ -64,7 +70,23 @@ exports.handler = async () => {
   }
 
   const results = await Promise.all(targets.map((url) => ping(url)));
+  results.forEach((result) => {
+    if (result.ok) {
+      console.log(
+        `[keep-alive] called ${result.url} -> status=${result.status} duration=${result.durationMs}ms`
+      );
+      return;
+    }
+
+    console.error(
+      `[keep-alive] called ${result.url} -> FAILED status=${result.status ?? "n/a"} duration=${result.durationMs}ms error=${result.error || "unknown"}`
+    );
+  });
+
   const failed = results.filter((result) => !result.ok);
+  console.log(
+    `[keep-alive] run completed; success=${results.length - failed.length} failed=${failed.length}`
+  );
 
   return {
     statusCode: failed.length ? 207 : 200,
