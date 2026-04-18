@@ -4,9 +4,19 @@ Netlify site that keeps Render services warm by pinging them every 12 minutes vi
 
 ## What it pings
 
-- `BACKEND_KEEPALIVE_URL` (set in Netlify environment variables)
-- `AI_KEEPALIVE_URL` (set in Netlify environment variables)
-- `EXTRA_KEEPALIVE_URL` (optional third API URL)
+Services are defined in [netlify/functions/keep-alive.js](netlify/functions/keep-alive.js) in the `SERVICES_TO_PING` array. Add or remove URLs directly in the code.
+
+## How to add more services
+
+Edit [netlify/functions/keep-alive.js](netlify/functions/keep-alive.js) and add URLs to the `SERVICES_TO_PING` array:
+
+```javascript
+const SERVICES_TO_PING = [
+  "https://sheild-backend-0q37.onrender.com",
+  "https://sheild-ai-service.onrender.com",
+  "https://your-other-service.onrender.com",
+];
+```
 
 ## Required Netlify settings
 
@@ -14,18 +24,10 @@ Netlify site that keeps Render services warm by pinging them every 12 minutes vi
 - Publish directory: `.`
 - Functions directory: `netlify/functions` (already in `netlify.toml`)
 
-## Netlify environment variables
-
-Set these in Site settings -> Environment variables:
-
-- `BACKEND_KEEPALIVE_URL=https://your-backend-name.onrender.com`
-- `AI_KEEPALIVE_URL=https://your-ai-service-name.onrender.com`
-- `EXTRA_KEEPALIVE_URL=https://your-third-api.onrender.com/health` (optional)
-
-Important: this function keeps services warm by calling each service root/origin URL. Even if a service returns `404` on `/`, that still means it was reached and warmed successfully.
+No environment variables needed. All service URLs are configured in the project.
 
 ## Schedule
 
-The function in `netlify/functions/keep-alive.js` uses:
+The function runs every 12 minutes using the cron schedule `*/12 * * * *`
 
-- `*/12 * * * *` (every 12 minutes)
+Important: this function keeps services warm by calling each service root/origin URL. Even if a service returns `404` on `/`, that still means it was reached and warmed successfully.

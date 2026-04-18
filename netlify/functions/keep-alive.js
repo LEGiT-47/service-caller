@@ -1,17 +1,19 @@
-const DEFAULT_EXTRA_URL = "";
-const DEFAULT_BACKEND_URL = "https://sheild-backend-0q37.onrender.com";
-const DEFAULT_AI_URL = "https://sheild-ai-service.onrender.com";
+// Define all services to keep alive here
+// Add or remove URLs as needed
+const SERVICES_TO_PING = [
+  // "https://sheild-backend-0q37.onrender.com",
+  // "https://sheild-ai-service.onrender.com",
+  "https://civicresource-ai.onrender.com",
+  "https://civicresource-ai-service.onrender.com",
+  "https://sequeira-foods-api.onrender.com"
+];
 
 exports.config = {
   schedule: "*/12 * * * *",
 };
 
 function buildTargets() {
-  const backend = process.env.BACKEND_KEEPALIVE_URL || DEFAULT_BACKEND_URL;
-  const ai = process.env.AI_KEEPALIVE_URL || DEFAULT_AI_URL;
-  const extra = process.env.EXTRA_KEEPALIVE_URL || DEFAULT_EXTRA_URL;
-
-  const normalized = [backend, ai, extra]
+  const normalized = SERVICES_TO_PING
     .map((url) => String(url || "").trim())
     .filter(Boolean)
     .map((url) => {
