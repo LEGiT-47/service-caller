@@ -5,7 +5,8 @@ const SERVICES_TO_PING = [
   // "https://sheild-ai-service.onrender.com",
   "https://civicresource-ai.onrender.com",
   "https://civicresource-ai-service.onrender.com",
-  "https://sequeira-foods-api.onrender.com"
+  "https://sequeira-foods-api.onrender.com",
+  "https://nte-dashboard.onrender.com"
 ];
 
 exports.config = {
